@@ -2,15 +2,16 @@ import { IResolvers } from "graphql-tools";
 import * as bcrypt from "bcryptjs";
 
 import { User } from "./entity/User";
+import { createTokens } from "./auth";
 
 export const resolvers: IResolvers = {
   Query: {
     me: (_, __, { req }) => {
-      if (!req.session.userId) {
+      if (!req.userId) {
         return null;
       }
 
-      return User.findOne(req.session.userId);
+      return User.findOne(req.userId);
     }
   },
   Mutation: {
@@ -23,7 +24,7 @@ export const resolvers: IResolvers = {
 
       return true;
     },
-    login: async (_, { email, password }, { req }) => {
+    login: async (_, { email, password }, { res }) => {
       const user = await User.findOne({ where: { email } });
       if (!user) {
         return null;
@@ -34,9 +35,30 @@ export const resolvers: IResolvers = {
         return null;
       }
 
-      req.session.userId = user.id;
+      const { accessToken, refreshToken } = createTokens(user);
+
+      res.cookie("refresh-token", refreshToken);
+      res.cookie("access-token", accessToken);
 
       return user;
+    },
+    invalidateTokens: async (_, __, { req, res }) => {
+      if (!req.userId) {
+        return false;
+      }
+
+      const user = await User.findOne(req.userId);
+      if (!user) {
+        console.log("not user");
+        return false;
+      }
+      user.count += 1;
+      await user.save();
+
+      res.clearCookie("access-token");
+      res.clearCookie("refresh-token");
+
+      return true;
     }
   }
 };
