@@ -4,15 +4,19 @@ import { User } from "./entity/User";
 export const createTokens = (user: User) => {
   const refreshToken = sign(
     { userId: user.id, count: user.count },
-    "asjhgdjhgd", // TODO store secret in .env
+    process.env.SESSION_SECRET as string, // TODO store secret in .env
     {
       expiresIn: "7d"
     }
   );
 
-  const accessToken = sign({ userId: user.id }, "asjhgdjhgd", {
-    expiresIn: "15min"
-  });
+  const accessToken = sign(
+    { userId: user.id },
+    process.env.SESSION_SECRET as string,
+    {
+      expiresIn: "15min"
+    }
+  );
 
   return { refreshToken, accessToken };
 };

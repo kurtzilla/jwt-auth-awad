@@ -49,9 +49,9 @@ export const resolvers: IResolvers = {
 
       const user = await User.findOne(req.userId);
       if (!user) {
-        console.log("not user");
         return false;
       }
+
       user.count += 1;
       await user.save();
 
